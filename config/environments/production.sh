@@ -1,4 +1,0 @@
-#!/bin/bash
-BALLS_ENV=production
-BALLS_RELOAD=0
-BALLS_PORT=${BALLS_PORT:-3000}

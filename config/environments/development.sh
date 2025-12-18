@@ -1,4 +1,0 @@
-#!/bin/bash
-BALLS_ENV=development
-BALLS_RELOAD=1
-BALLS_PORT=${BALLS_PORT:-3000}
