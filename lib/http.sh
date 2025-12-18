@@ -1,5 +1,9 @@
 #!/bin/bash
 
+http::header_env_key() {
+  echo "$1" | tr '[:lower:]' '[:upper:]' | tr '- ' '__' | tr -cd 'A-Z0-9_'
+}
+
 http::parse_request() {
   http::read req_line
   req_line=($req_line)
@@ -11,12 +15,16 @@ http::parse_request() {
   export HTTP_VERSION=${req_line[2]}
   export SERVER_SOFTWARE="balls/0.0"
 
-  declare -gA HEADERS
-  local key val
+  HEADERS_KEYS=()
+  HEADERS=()
+  local key val env_key
   while http::read HEADER_LINE; do
     key="${HEADER_LINE%%*( ):*}"; trim key
     val="${HEADER_LINE#*:*( )}"; trim val
-    HEADERS["$key"]="$val"
+    env_key=$(http::header_env_key "$key")
+    HEADERS_KEYS+=("$key")
+    HEADERS+=("$key=$val")
+    export "HEADERS_${env_key}"="$val"
   done
 }
 

@@ -28,12 +28,12 @@ render::section_if() {
 render::section_each() {
   local list_name="$1"; local block="$2"
   local idx=0
-  local list_var="${list_name}[@]"
-  local items=("${!list_var}")
+  local items_var="${list_name}[@]"
+  local items=("${!items_var}")
   if [[ ${#items[@]} -eq 0 && -n "${!list_name}" ]]; then items=("${!list_name}"); fi
   for item in "${items[@]}"; do
     this="$item"; export this
-    @index=$idx; export @index
+    index="$idx"; export index
     render::process "$block"
     idx=$((idx+1))
   done
@@ -55,8 +55,14 @@ render::process() {
   local input="$1"
   local output=""
 
+  local re_each='(.*)\{\{#each ([^}]*)\}\}(.*)\{\{/each\}\}(.*)'
+  local re_if='(.*)\{\{#if ([^}]*)\}\}(.*)\{\{/if\}\}(.*)'
+  local re_partial='(.*)\{\{> ([^}]*)\}\}(.*)'
+  local re_raw='(.*)\{\{\{([^}]*)\}\}\}(.*)'
+  local re_esc='(.*)\{\{([^}]*)\}\}(.*)'
+
   # Each blocks
-  while [[ "$input" =~ (.*)\{\{#each ([^}]*)\}\}(.*)\{\{/each\}\}(.*) ]]; do
+  while [[ "$input" =~ $re_each ]]; do
     local before="${BASH_REMATCH[1]}"
     local list="${BASH_REMATCH[2]}"
     local block="${BASH_REMATCH[3]}"
@@ -67,7 +73,7 @@ render::process() {
   done
 
   # If blocks
-  while [[ "$input" =~ (.*)\{\{#if ([^}]*)\}\}(.*)\{\{/if\}\}(.*) ]]; do
+  while [[ "$input" =~ $re_if ]]; do
     local before="${BASH_REMATCH[1]}"
     local cond="${BASH_REMATCH[2]}"
     local block="${BASH_REMATCH[3]}"
@@ -78,7 +84,7 @@ render::process() {
   done
 
   # Partials
-  while [[ "$input" =~ (.*?)\{\{> ([^}]*)\}\}(.*) ]]; do
+  while [[ "$input" =~ $re_partial ]]; do
     output+="${BASH_REMATCH[1]}"
     output+="$(render::partial "${BASH_REMATCH[2]}")"
     input="${BASH_REMATCH[3]}"
@@ -86,7 +92,7 @@ render::process() {
 
   # Raw interpolation
   local rest="$input"; local tmp=""
-  while [[ "$rest" =~ (.*?)\{\{\{([^}]*)\}\}\}(.*) ]]; do
+  while [[ "$rest" =~ $re_raw ]]; do
     tmp+="${BASH_REMATCH[1]}";
     tmp+="$(render::lookup "${BASH_REMATCH[2]}")";
     rest="${BASH_REMATCH[3]}";
@@ -95,7 +101,7 @@ render::process() {
 
   # Escaped interpolation
   rest="$input"; tmp=""
-  while [[ "$rest" =~ (.*?)\{\{([^}]*)\}\}(.*) ]]; do
+  while [[ "$rest" =~ $re_esc ]]; do
     tmp+="${BASH_REMATCH[1]}";
     tmp+="$(render::escape_html "$(render::lookup "${BASH_REMATCH[2]}")")";
     rest="${BASH_REMATCH[3]}";

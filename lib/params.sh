@@ -3,16 +3,16 @@
 # Simple params parsing (query + form-encoded body)
 
 params::reset() {
-  unset REQ_PARAMS_KEYS
-  declare -gA REQ_PARAMS
+  unset REQ_PARAMS_KEYS REQ_PARAMS
   REQ_PARAMS_KEYS=()
+  REQ_PARAMS=()
 }
 
 params::put() {
   local key="$1"; shift
   local val="$1"
-  REQ_PARAMS["$key"]="$val"
   REQ_PARAMS_KEYS+=("$key")
+  REQ_PARAMS+=("$key=$val")
   export "REQ_PARAMS_${key}"="$val"
 }
 

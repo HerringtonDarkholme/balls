@@ -46,7 +46,7 @@ balls::server() {
   http_sock=$BALLS_TMP/balls.http.$$.sock
   [ -p $http_sock ] || mkfifo $http_sock
   while true; do
-    cat $http_sock | nc -l -p $BALLS_PORT | (
+    cat $http_sock | nc -l $BALLS_PORT | (
       http::parse_request
       balls::handle_request > $http_sock
     )
