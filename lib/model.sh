@@ -1,106 +1,77 @@
 #!/bin/bash
 
-[[ -z "$BALLS_DB_CREDENTIALS" ]] && BALLS_DB_CREDENTIALS=''
-[[ -z "$BALLS_DB" ]] && BALLS_DB='balls'
+# shql-backed model helpers (SQLite via shql)
 
-balls::model::impl() {
-  local model="$1"; shift
+BALLS_SHQL=${BALLS_SHQL:-shql}
+[[ -z "$BALLS_DB_DIR" ]] && BALLS_DB_DIR="$BALLS_ROOT/db"
+[[ -z "$BALLS_DB_FILE" ]] && BALLS_DB_FILE="$BALLS_DB_DIR/${BALLS_ENV:-development}.sqlite"
 
-  local mode="$1"; shift
-
-  if exists "$model.$mode"; then
-    "$model.$mode" "$@"
-  elif exists "$model::$mode"; then
-    while read line; do
-      balls::model.with "$line" "$model::$mode"
-    done
-  elif balls::model.fields | matches "^$mode\$"; then
-    balls::model.field "$mode"
-  elif exists "balls::model.$mode"; then
-    "balls::model.$mode" "$@"
-  else
-    stderr "oh no! couldn't find \`$model.$mode\`."
-  fi
+model::db() {
+  echo "$BALLS_DB_FILE"
 }
 
-balls::model.with() {
-  local __data="$1"; shift
-  local __callback="$1"; shift
-  for __field in $(balls::model.fields); do
-    local "$__field"="$(balls::model.field "$__field" <<<"$__data\n")"
-    local "$__field"="$(balls::model.field "$__field" <<<"$__data\n")"
+model::exec() {
+  local sql="$1"; shift
+  local db="$(model::db)"
+  $BALLS_SHQL "$db" "$sql" "$@"
+}
+
+model::find() {
+  local table="$1"; local id="$2"
+  model::exec "SELECT * FROM $table WHERE id = ? LIMIT 1;" "$id"
+}
+
+model::where() {
+  local table="$1"; shift
+  local clause="$1"; shift
+  model::exec "SELECT * FROM $table WHERE $clause;" "$@"
+}
+
+model::insert() {
+  local table="$1"; shift
+  local fields=()
+  local placeholders=()
+  local values=()
+  while [[ $# -gt 0 ]]; do
+    fields+=("$1"); shift
+    placeholders+=("?")
+    values+=("$1"); shift
   done
-  "$__callback" "$@"
+  local sql="INSERT INTO $table (${fields[*]// /,}) VALUES (${placeholders[*]// /,});"
+  model::exec "$sql" "${values[@]}"
 }
 
-balls::model() {
-  alias "$1"="balls::model::impl $1"
-  BALLS_LAST_MODEL="$1"
-}
-
-balls::model.find() {
-  local query="$1"; shift
-  for param in "$@"; do
-    db_safe param
-    query="${query/\?/$param}"
+model::update() {
+  local table="$1"; shift
+  local id="$1"; shift
+  local sets=()
+  local values=()
+  while [[ $# -gt 0 ]]; do
+    sets+=("$1 = ?"); shift
+    values+=("$1"); shift
   done
-  balls::model.execute "SELECT * from $(balls::model.table_name) WHERE $query"
+  values+=("$id")
+  local sql="UPDATE $table SET ${sets[*]// /,} WHERE id = ?;"
+  model::exec "$sql" "${values[@]}"
 }
 
-balls::model.fetch_fields() {
-  balls::model.execute "SHOW COLUMNS IN $(balls::model.table_name)" |\
-    cut -f1 # bah
+model::delete() {
+  local table="$1"; local id="$2"
+  model::exec "DELETE FROM $table WHERE id = ?;" "$id"
 }
 
-balls::model.fields() {
-  local fields_var="$model"_FIELDS
-  echo "${!fields_var}"
+model::ensure_schema_migrations() {
+  model::exec "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY);"
 }
 
-balls::model.field_map() {
-  balls::model.fields | nl -nrz -ba
-}
-
-balls::model.column_number_for() {
-  local field="$1"
-  balls::model.field_map | grep "$field\$" | cut -f1
-}
-
-balls::model.field_at() {
-  local idx="$1"
-  balls::model.field_map | grep "^0*$idx" | cut -f2-
-}
-
-balls::model.field() {
-  local idx="$(balls::model.column_number_for "$1")"
-  cut -f"$idx"
-}
-
-balls::model.table_name() {
-  local table_name_var="${model}_table_name"
-  if [[ -n "$1" ]]; then
-    export "$table_name_var"="$1"
-  elif [[ -n "${!table_name_var}" ]]; then
-    echo "${!table_name_var}"
-  else
-    echo "$model" | tr '[A-Z]' '[a-z]'
-  fi
-}
-
-balls::model.execute() {
-  mysql $BALLS_DB_CREDENTIALS "$BALLS_DB" -e "$@" | tail -n+2 |\
-    sed 's/NULL//g'
-}
-
-balls::model::load() {
-  local file="$1"; shift
-
-  . "$file"
-
-  local model_name="$BALLS_LAST_MODEL"
-
-  local fields_var="$model_name"_FIELDS
-  #                 Person_FIELDS
-
-  export "$fields_var"="$(balls::model::impl "$model_name" fetch_fields)"
+model::migrate() {
+  model::ensure_schema_migrations
+  local db="$(model::db)"
+  for migration in $(ls "$BALLS_DB_DIR"/migrate/*.sh 2>/dev/null | sort); do
+    local version=$(basename "$migration" .sh)
+    if ! model::exec "SELECT version FROM schema_migrations WHERE version = ?;" "$version" | grep -q "$version"; then
+      BALLS_DB_FILE="$db" bash "$migration"
+      model::exec "INSERT INTO schema_migrations (version) VALUES (?);" "$version"
+    fi
+  done
 }
