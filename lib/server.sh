@@ -24,6 +24,16 @@ balls::serve_file() {
 
 balls::handle_request() {
   http::parse_request
+  params::reset
+  params::parse_query "$QUERY_STRING"
+  local ctype="${HEADERS[Content-Type]}"
+  local clen="${HEADERS[Content-Length]}"
+  local body=""
+  if [[ -n "$clen" ]]; then
+    IFS= read -r -n "$clen" body
+  fi
+  params::parse_body "$body" "$ctype"
+  REQUEST_BODY="$body"
   local clean_path=${REQUEST_PATH#/}
   if balls::serve_file "$clean_path"; then
     return
@@ -38,7 +48,7 @@ balls::server() {
   while true; do
     cat $http_sock | nc -l -p $BALLS_PORT | (
       http::parse_request
-      balls::route > $http_sock
+      balls::handle_request > $http_sock
     )
   done
 }

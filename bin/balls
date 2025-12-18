@@ -10,8 +10,9 @@ while getopts 'e:C:' opt; do
   esac
 done
 [[ -z "$BALLS_ENV" ]] && BALLS_ENV=development
-[[ -z "$BALLS_CONF" ]] && BALLS_CONF=./config/environments/$BALLS_ENV.sh
+[[ -z "$BALLS_CONF" ]] && BALLS_CONF=./config/config.sh
 . "$BALLS_CONF"
+[ -f ./config/environments/$BALLS_ENV.sh ] && . ./config/environments/$BALLS_ENV.sh
 . $BALLS_LIB/balls.sh
 case $mode in
   server|s) balls::server ;;

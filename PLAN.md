@@ -4,7 +4,7 @@
 - Deliver a Rails-inspired Bash framework with MVC, routing, views, models, and generators.
 - External tools (e.g., `jq`) may be used optionally when present, but runtime must work without them.
 - Templates use a built-in mini-tag parser (interpolation, if/each, partials, escaping).
-- Persist data via `shql` (SQLite) with simple migrations and CRUD wrappers.
+- Persist data via simple file-backed store (`db.sh` key/value) by default; optional external tools like `jq` allowed but not required.
 - Prefer concise testing harness (tiny assert helpers; `bats` only if present).
 - Frontend interactions favor HTMX (`https://htmx.org/`) for progressive enhancement.
 

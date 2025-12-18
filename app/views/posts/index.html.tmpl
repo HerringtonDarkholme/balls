@@ -1,0 +1,11 @@
+<h1>{{title}}</h1>
+<ul>
+  {{#each posts}}
+    <li>{{this}}</li>
+  {{/each}}
+</ul>
+<form hx-post="/posts" hx-target="ul" hx-swap="afterbegin">
+  <input name="title" placeholder="Title">
+  <input name="body" placeholder="Body">
+  <button type="submit">Add</button>
+</form>

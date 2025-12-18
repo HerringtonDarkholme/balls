@@ -1,77 +1,77 @@
 #!/bin/bash
 
-# shql-backed model helpers (SQLite via shql)
+# file-backed model helpers using db.sh key/value store
 
-BALLS_SHQL=${BALLS_SHQL:-shql}
-[[ -z "$BALLS_DB_DIR" ]] && BALLS_DB_DIR="$BALLS_ROOT/db"
-[[ -z "$BALLS_DB_FILE" ]] && BALLS_DB_FILE="$BALLS_DB_DIR/${BALLS_ENV:-development}.sqlite"
+[[ -z "$BALLS_DB_FILE" ]] && BALLS_DB_FILE="$BALLS_ROOT/x.db"
 
-model::db() {
-  echo "$BALLS_DB_FILE"
+# Records are stored as key=value lines where key is "table:id"
+# and value is a JSON-like string (or any payload). Simple and append-only.
+# Storage implementation lives in lib/db.sh (db get/set/del)
+
+model::key() {
+  local table="$1"; local id="$2"
+  echo "$table:$id"
 }
 
-model::exec() {
-  local sql="$1"; shift
-  local db="$(model::db)"
-  $BALLS_SHQL "$db" "$sql" "$@"
+model::get_raw() {
+  local table="$1"; local id="$2"
+  db get "$(model::key "$table" "$id")"
+}
+
+model::set_raw() {
+  local table="$1"; local id="$2"; local payload="$3"
+  db set "$(model::key "$table" "$id")" "$payload"
+}
+
+model::del_raw() {
+  local table="$1"; local id="$2"
+  db del "$(model::key "$table" "$id")"
+}
+
+model::next_id() {
+  local table="$1"
+  local seq_key="${table}:__seq"
+  local current
+  current=$(db get "$seq_key")
+  [[ -z "$current" ]] && current=0
+  local next=$((current+1))
+  db set "$seq_key" "$next"
+  echo "$next"
+}
+
+model::create() {
+  local table="$1"; shift
+  local id=$(model::next_id "$table")
+  local payload="$1"
+  model::set_raw "$table" "$id" "$payload"
+  echo "$id"
 }
 
 model::find() {
   local table="$1"; local id="$2"
-  model::exec "SELECT * FROM $table WHERE id = ? LIMIT 1;" "$id"
-}
-
-model::where() {
-  local table="$1"; shift
-  local clause="$1"; shift
-  model::exec "SELECT * FROM $table WHERE $clause;" "$@"
-}
-
-model::insert() {
-  local table="$1"; shift
-  local fields=()
-  local placeholders=()
-  local values=()
-  while [[ $# -gt 0 ]]; do
-    fields+=("$1"); shift
-    placeholders+=("?")
-    values+=("$1"); shift
-  done
-  local sql="INSERT INTO $table (${fields[*]// /,}) VALUES (${placeholders[*]// /,});"
-  model::exec "$sql" "${values[@]}"
+  model::get_raw "$table" "$id"
 }
 
 model::update() {
-  local table="$1"; shift
-  local id="$1"; shift
-  local sets=()
-  local values=()
-  while [[ $# -gt 0 ]]; do
-    sets+=("$1 = ?"); shift
-    values+=("$1"); shift
-  done
-  values+=("$id")
-  local sql="UPDATE $table SET ${sets[*]// /,} WHERE id = ?;"
-  model::exec "$sql" "${values[@]}"
+  local table="$1"; local id="$2"; local payload="$3"
+  model::set_raw "$table" "$id" "$payload"
 }
 
 model::delete() {
   local table="$1"; local id="$2"
-  model::exec "DELETE FROM $table WHERE id = ?;" "$id"
+  model::del_raw "$table" "$id"
 }
 
-model::ensure_schema_migrations() {
-  model::exec "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY);"
+model::all_keys() {
+  grep -E "^$1:[0-9]+=" "$BALLS_DB_FILE" 2>/dev/null | cut -d= -f1
 }
 
-model::migrate() {
-  model::ensure_schema_migrations
-  local db="$(model::db)"
-  for migration in $(ls "$BALLS_DB_DIR"/migrate/*.sh 2>/dev/null | sort); do
-    local version=$(basename "$migration" .sh)
-    if ! model::exec "SELECT version FROM schema_migrations WHERE version = ?;" "$version" | grep -q "$version"; then
-      BALLS_DB_FILE="$db" bash "$migration"
-      model::exec "INSERT INTO schema_migrations (version) VALUES (?);" "$version"
-    fi
+model::all() {
+  local table="$1"
+  model::all_keys "$table" | while read key; do
+    [[ -z "$key" ]] && continue
+    local id="${key##*:}"
+    local val="$(db get "$key")"
+    echo "$id|$val"
   done
 }
