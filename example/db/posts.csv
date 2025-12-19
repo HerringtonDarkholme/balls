@@ -6,14 +6,3 @@ id,title,body
 
 Test <script>alert('xss!')</script>"
 5,hello bash on balls,"Hello!
-
-Test <script>alert('xss!')</script>"
-6,hello bash on balls,"Hello!
-
-Test <script>alert('xss!')</script>"
-7,hello bash on balls,"Hello!
-
-Test <script>alert('xss!')</script>"
-8,hello bash on balls,"Hello!
-
-Test <script>alert('xss!')</script>"

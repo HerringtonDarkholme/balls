@@ -21,6 +21,31 @@ REQUEST_VERSION=""
 REQUEST_HEADERS=""
 REQUEST_BODY=""
 
+# URL decode (needed before controller.sh is sourced)
+_url_decode() {
+    local encoded="$1"
+    local decoded=""
+    local i=0
+    local len=${#encoded}
+    
+    while [[ $i -lt $len ]]; do
+        local char="${encoded:$i:1}"
+        if [[ "$char" == "%" && $((i + 2)) -lt $len ]]; then
+            local hex="${encoded:$((i+1)):2}"
+            decoded+=$(printf "\\x$hex")
+            i=$((i + 3))
+        elif [[ "$char" == "+" ]]; then
+            decoded+=" "
+            i=$((i + 1))
+        else
+            decoded+="$char"
+            i=$((i + 1))
+        fi
+    done
+    
+    printf '%s' "$decoded"
+}
+
 # Parse HTTP request line
 # Format: GET /path?query HTTP/1.1
 parse_request_line() {
@@ -110,11 +135,11 @@ parse_cookies() {
 parse_flash_cookies() {
     # Check for flash cookies
     if [[ -n "$COOKIE_flash_notice" ]]; then
-        FLASH_NOTICE=$(url_decode "$COOKIE_flash_notice")
+        FLASH_NOTICE=$(_url_decode "$COOKIE_flash_notice")
         flash_notice="$FLASH_NOTICE"
     fi
     if [[ -n "$COOKIE_flash_error" ]]; then
-        FLASH_ERROR=$(url_decode "$COOKIE_flash_error")
+        FLASH_ERROR=$(_url_decode "$COOKIE_flash_error")
         flash_error="$FLASH_ERROR"
     fi
 }
