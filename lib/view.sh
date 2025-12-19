@@ -237,12 +237,25 @@ interpolate_template() {
                     # Yield placeholder for layout (replaced separately)
                     result+="{{yield}}"
                     ;;
+                "{"*)
+                    # Raw/unescaped output: {{{variable}}}
+                    # Tag is "{var}" - strip the leading {
+                    # Content starts with "}" - need to consume it
+                    local raw_var="${tag#\{}"
+                    raw_var="${raw_var#"${raw_var%%[![:space:]]*}"}"
+                    raw_var="${raw_var%"${raw_var##*[![:space:]]}"}"
+                    # Consume the trailing } that's part of }}}
+                    content="${content#\}}"
+                    eval "local raw_value=\"\${$raw_var}\""
+                    result+="$raw_value"
+                    ;;
                 *)
                     # Variable interpolation: {{variable}}
+                    # HTML-escaped by default to prevent XSS
                     # Skip if it looks like a closing tag
                     if [[ "$tag" != /* ]]; then
                         eval "local var_value=\"\${$tag}\""
-                        result+="$var_value"
+                        result+="$(h "$var_value")"
                     fi
                     ;;
             esac

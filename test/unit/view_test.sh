@@ -264,6 +264,35 @@ else
     test_fail "$result"
 fi
 
+# Test: XSS prevention - variables are escaped by default
+test_start "{{variable}} escapes HTML to prevent XSS"
+xss_input="<script>alert('xss')</script>"
+result=$(interpolate_template "{{xss_input}}")
+if [[ "$result" == "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;" ]]; then
+    test_pass
+else
+    test_fail "Expected escaped HTML, got: $result"
+fi
+
+# Test: Raw output with triple braces
+test_start "{{{variable}}} outputs raw unescaped HTML"
+raw_html="<b>bold</b>"
+result=$(interpolate_template "{{{raw_html}}}")
+if [[ "$result" == "<b>bold</b>" ]]; then
+    test_pass
+else
+    test_fail "Expected raw HTML, got: $result"
+fi
+
+# Test: h() helper escapes HTML
+test_start "h() helper escapes HTML entities"
+result=$(h "<script>alert('xss')</script>")
+if [[ "$result" == "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;" ]]; then
+    test_pass
+else
+    test_fail "$result"
+fi
+
 # Cleanup
 cleanup_temp_dir
 
