@@ -81,11 +81,11 @@ else
 fi
 
 test_start "parse_headers handles multiple headers"
-headers="Host: localhost:3000
+headers="Host: localhost:14514
 User-Agent: curl/7.64.1
 Accept: */*"
 parse_headers "$headers"
-if [[ "$HEADER_Host" == "localhost:3000" ]] && [[ "$HEADER_User_Agent" == "curl/7.64.1" ]]; then
+if [[ "$HEADER_Host" == "localhost:14514" ]] && [[ "$HEADER_User_Agent" == "curl/7.64.1" ]]; then
     test_pass
 else
     test_fail "Host: $HEADER_Host, User-Agent: $HEADER_User_Agent"

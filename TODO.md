@@ -271,7 +271,7 @@ A comprehensive step-by-step implementation checklist with macOS-specific verifi
 
 - [ ] **Step 7.2: Implement nc accept loop**
   - Task: While loop with nc to accept connections (BSD nc workaround for no `-k`)
-  - Verify: Start server, `curl http://localhost:3000` responds
+  - Verify: Start server, `curl http://localhost:14514` responds
 
 - [ ] **Step 7.3: Implement request line parser**
   - Task: Parse `GET /path HTTP/1.1` into method, path, version
@@ -307,7 +307,7 @@ A comprehensive step-by-step implementation checklist with macOS-specific verifi
 
 - [ ] **Step 7.11: Implement `balls server [path]` command**
   - Task: Start server for app at path (default: current dir)
-  - Verify: `./balls server example/` — server starts on port 3000
+  - Verify: `./balls server example/` — server starts on port 14514
 
 - [ ] **Step 7.12: Unit Test — Server components**
   - Task: Create `test/unit/server_test.sh` testing request/response parsing
@@ -443,23 +443,23 @@ A comprehensive step-by-step implementation checklist with macOS-specific verifi
 
 - [ ] **Step 11.3: E2E test: List posts**
   - Task: Start server, GET /posts, verify HTML response
-  - Verify: `curl http://localhost:3000/posts` — returns posts list HTML
+  - Verify: `curl http://localhost:14514/posts` — returns posts list HTML
 
 - [ ] **Step 11.4: E2E test: Create post**
   - Task: POST /posts with form data
-  - Verify: `curl -X POST -d "title=Test&body=Content" http://localhost:3000/posts` — redirects
+  - Verify: `curl -X POST -d "title=Test&body=Content" http://localhost:14514/posts` — redirects
 
 - [ ] **Step 11.5: E2E test: Show post**
   - Task: GET /posts/1
-  - Verify: `curl http://localhost:3000/posts/1` — shows post detail
+  - Verify: `curl http://localhost:14514/posts/1` — shows post detail
 
 - [ ] **Step 11.6: E2E test: Update post**
   - Task: POST /posts/1 with _method=PUT
-  - Verify: `curl -X POST -d "_method=PUT&title=Updated" http://localhost:3000/posts/1` — updates
+  - Verify: `curl -X POST -d "_method=PUT&title=Updated" http://localhost:14514/posts/1` — updates
 
 - [ ] **Step 11.7: E2E test: Delete post**
   - Task: POST /posts/1 with _method=DELETE
-  - Verify: `curl -X POST -d "_method=DELETE" http://localhost:3000/posts/1` — deletes
+  - Verify: `curl -X POST -d "_method=DELETE" http://localhost:14514/posts/1` — deletes
 
 ---
 

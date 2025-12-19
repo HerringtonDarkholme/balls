@@ -51,7 +51,7 @@ ${BOLD}Usage:${NC}
 
 ${BOLD}Commands:${NC}
     new <name>              Create a new Balls application
-    server [path] [port]    Start the development server (default: port 3000)
+    server [path] [port]    Start the development server (default: port 14514)
     routes [path]           Display the route table
     generate <type> <name>  Generate controller, model, or scaffold
         controller <name> [actions...]
@@ -73,7 +73,7 @@ ${BOLD}Examples:${NC}
 
 ${BOLD}Environment:${NC}
     BALLS_ENV       Set environment (development/production)
-    PORT            Server port (default: 3000)
+    PORT            Server port (default: 14514)
 
 For more information, visit: https://github.com/example/balls
 EOF
@@ -195,7 +195,7 @@ CSS
 
     # Create .env file
     cat > "$app_name/.env" << 'ENV'
-PORT=3000
+PORT=14514
 HOST=127.0.0.1
 BALLS_ENV=development
 DB_BACKEND=csv
@@ -222,13 +222,13 @@ GITIGNORE
     echo "  cd $app_name"
     echo "  ../balls server"
     echo ""
-    echo "Then visit http://localhost:3000"
+    echo "Then visit http://localhost:14514"
 }
 
 # Start server
 balls_server() {
     local app_path="${1:-.}"
-    local port="${2:-3000}"
+    local port="${2:-14514}"
     
     # Resolve to absolute path
     app_path="$(cd "$app_path" 2>/dev/null && pwd)" || {

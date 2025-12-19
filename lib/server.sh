@@ -7,7 +7,7 @@
 #
 
 # Server configuration
-SERVER_PORT="${PORT:-3000}"
+SERVER_PORT="${PORT:-14514}"
 SERVER_HOST="${HOST:-127.0.0.1}"
 
 # Source dependencies

@@ -40,14 +40,14 @@ cd myapp
 # Start the server
 ../balls server
 
-# Visit http://localhost:3000
+# Visit http://localhost:14514
 ```
 
 ## CLI Commands
 
 ```bash
 balls new <app>                           # Create new application
-balls server [path] [port]                # Start development server (default: port 3000)
+balls server [path] [port]                # Start development server (default: port 14514)
 balls routes [path]                       # Display route table
 balls generate controller <name> [actions...]    # Generate controller
 balls generate model <name> [fields...]          # Generate model
@@ -537,7 +537,7 @@ Run tests:
 Create `.env` in your app directory:
 
 ```bash
-PORT=3000
+PORT=14514
 HOST=127.0.0.1
 BALLS_ENV=development
 DB_BACKEND=csv
@@ -575,9 +575,9 @@ balls/
 
 ```bash
 cd balls
-./balls server example/ 3000
-# Visit http://localhost:3000
-# Try http://localhost:3000/posts for CRUD operations
+./balls server example/ 14514
+# Visit http://localhost:14514
+# Try http://localhost:14514/posts for CRUD operations
 ```
 
 ## License
