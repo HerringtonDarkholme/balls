@@ -3,6 +3,3 @@ id,title,body
 2,Getting Started,Bash on Balls is a parody web framework inspired by Ruby on Rails. It uses BSD netcat for serving HTTP.
 3,Understanding the MVC Pattern,"Models, Views, and Controllers - all written in pure Bash shell scripts. Amazing, right?"
 4,hello bash on balls,"Hello!
-
-Test <script>alert('xss!')</script>"
-5,hello bash on balls,"Hello!
