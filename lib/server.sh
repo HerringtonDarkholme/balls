@@ -127,7 +127,19 @@ parse_cookies() {
         name="${name# }"  # Trim spaces
         name="${name% }"
         
-        eval "export COOKIE_${name}=\"\$value\""
+        # Sanitize cookie name for use as bash variable
+        # Replace invalid chars (., -, etc.) with underscore
+        local safe_name="${name//[^a-zA-Z0-9_]/_}"
+        
+        # Skip if name is empty after sanitization
+        [[ -z "$safe_name" ]] && continue
+        
+        # Ensure it doesn't start with a number
+        if [[ "$safe_name" =~ ^[0-9] ]]; then
+            safe_name="_${safe_name}"
+        fi
+        
+        eval "export COOKIE_${safe_name}=\"\$value\""
     done
 }
 
