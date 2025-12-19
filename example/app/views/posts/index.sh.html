@@ -6,34 +6,21 @@
 </div>
 
 <div class="grid gap-6" id="posts-list">
-{{# 
-# List all posts
-while IFS= read -r line; do
-    if [[ -n "$line" ]]; then
-        # Parse each post
-        post_id="${line%%,*}"
-        rest="${line#*,}"
-        post_title="${rest%%,*}"
-        post_body="${rest#*,}"
-        
-        cat << POSTHTML
-    <article class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition" id="post-$post_id">
+{{#each posts}}
+    <article class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition" id="post-{{id}}">
         <h2 class="text-xl font-semibold mb-2">
-            <a href="/posts/$post_id" class="text-gray-800 hover:text-primary">$post_title</a>
+            <a href="/posts/{{id}}" class="text-gray-800 hover:text-primary">{{title}}</a>
         </h2>
-        <p class="text-gray-600 mb-4">${post_body:0:100}...</p>
+        <p class="text-gray-600 mb-4">{{body}}</p>
         <div class="flex gap-3 text-sm">
-            <a href="/posts/$post_id" class="text-primary hover:underline">Read more</a>
-            <a href="/posts/$post_id/edit" class="text-gray-500 hover:underline">Edit</a>
-            <button hx-delete="/posts/$post_id" 
-                    hx-target="#post-$post_id" 
+            <a href="/posts/{{id}}" class="text-primary hover:underline">Read more</a>
+            <a href="/posts/{{id}}/edit" class="text-gray-500 hover:underline">Edit</a>
+            <button hx-delete="/posts/{{id}}" 
+                    hx-target="#post-{{id}}" 
                     hx-swap="outerHTML"
                     hx-confirm="Are you sure you want to delete this post?"
                     class="text-danger hover:underline">Delete</button>
         </div>
     </article>
-POSTHTML
-    fi
-done <<< "$posts"
-}}
+{{/each}}
 </div>

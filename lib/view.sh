@@ -205,19 +205,86 @@ interpolate_template() {
                     fi
                     ;;
                 "#each "*)
-                    # Loop: {{#each items}} ... {{/each}}
-                    # Note: Limited implementation for bash
+                    # Loop: {{#each model_name}} ... {{/each}}
+                    # Iterates over CSV records, setting field variables for each
                     local var_name="${tag#\#each }"
+                    var_name="${var_name#"${var_name%%[![:space:]]*}"}"
+                    var_name="${var_name%"${var_name##*[![:space:]]}"}"
                     local loop_content="${content%%\{\{/each\}\}*}"
                     content="${content#*\{\{/each\}\}}"
                     
-                    # Get the array variable
+                    # Get the CSV data from variable
                     eval "local items=\"\${$var_name}\""
                     
-                    # For CSV data, split by newline
-                    while IFS= read -r item; do
-                        if [[ -n "$item" ]]; then
-                            # Set item fields as variables
+                    # Get model file to read header for field names
+                    local model_file="${APP_PATH}/db/${var_name}.csv"
+                    local fields_str=""
+                    if [[ -f "$model_file" ]]; then
+                        fields_str=$(head -1 "$model_file")
+                    else
+                        # Fallback: assume id,title,body for basic models
+                        fields_str="id,title,body"
+                    fi
+                    
+                    # Parse header into array
+                    local fields=()
+                    local tmp_fields="$fields_str"
+                    while [[ -n "$tmp_fields" ]]; do
+                        if [[ "$tmp_fields" == *","* ]]; then
+                            fields+=("${tmp_fields%%,*}")
+                            tmp_fields="${tmp_fields#*,}"
+                        else
+                            fields+=("$tmp_fields")
+                            break
+                        fi
+                    done
+                    
+                    # Iterate over each CSV line
+                    while IFS= read -r line; do
+                        if [[ -n "$line" ]]; then
+                            # Parse CSV line into values array
+                            local values=()
+                            local remaining="$line"
+                            local in_quotes=false
+                            local current=""
+                            
+                            while [[ -n "$remaining" || -n "$current" ]]; do
+                                if [[ -z "$remaining" ]]; then
+                                    values+=("$current")
+                                    break
+                                fi
+                                
+                                local char="${remaining:0:1}"
+                                remaining="${remaining:1}"
+                                
+                                if [[ "$char" == '"' ]]; then
+                                    if $in_quotes; then
+                                        if [[ "${remaining:0:1}" == '"' ]]; then
+                                            current+='"'
+                                            remaining="${remaining:1}"
+                                        else
+                                            in_quotes=false
+                                        fi
+                                    else
+                                        in_quotes=true
+                                    fi
+                                elif [[ "$char" == ',' ]] && ! $in_quotes; then
+                                    values+=("$current")
+                                    current=""
+                                else
+                                    current+="$char"
+                                fi
+                            done
+                            
+                            # Set field variables for this record
+                            local i=0
+                            for field in "${fields[@]}"; do
+                                local val="${values[$i]:-}"
+                                eval "local $field=\"\$val\""
+                                ((i++)) || true
+                            done
+                            
+                            # Process template with current field variables
                             local processed=$(interpolate_template "$loop_content")
                             result+="$processed"
                         fi

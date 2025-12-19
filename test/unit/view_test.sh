@@ -293,6 +293,33 @@ else
     test_fail "$result"
 fi
 
+# Test: {{#each}} loop parses CSV and sets field variables
+test_start "{{#each}} iterates over CSV records with field variables"
+# Create test CSV data
+mkdir -p "$TEMP_DIR/db"
+echo "id,name,email" > "$TEMP_DIR/db/users.csv"
+echo "1,Alice,alice@test.com" >> "$TEMP_DIR/db/users.csv"
+echo "2,Bob,bob@test.com" >> "$TEMP_DIR/db/users.csv"
+users=$'1,Alice,alice@test.com\n2,Bob,bob@test.com'
+result=$(interpolate_template "{{#each users}}<li>{{name}}: {{email}}</li>{{/each}}")
+if [[ "$result" == *"<li>Alice: alice@test.com</li>"* ]] && [[ "$result" == *"<li>Bob: bob@test.com</li>"* ]]; then
+    test_pass
+else
+    test_fail "Expected user list, got: $result"
+fi
+
+# Test: {{#each}} escapes HTML in field values
+test_start "{{#each}} escapes HTML in field values to prevent XSS"
+echo "id,name" > "$TEMP_DIR/db/items.csv"
+echo "1,<script>bad</script>" >> "$TEMP_DIR/db/items.csv"
+items='1,<script>bad</script>'
+result=$(interpolate_template "{{#each items}}{{name}}{{/each}}")
+if [[ "$result" == *"&lt;script&gt;bad&lt;/script&gt;"* ]]; then
+    test_pass
+else
+    test_fail "Expected escaped HTML, got: $result"
+fi
+
 # Cleanup
 cleanup_temp_dir
 

@@ -239,14 +239,53 @@ Views are `.sh.html` templates in `app/views/`:
 ### Template Syntax
 
 ```html
-{{variable}}              <!-- Variable interpolation -->
+{{variable}}              <!-- Variable interpolation (HTML-escaped) -->
+{{{variable}}}            <!-- Raw output (no escaping - use with caution!) -->
 {{# shell_command }}      <!-- Execute shell and insert output -->
 
 {{#if variable}}          <!-- Conditional (shows if variable is non-empty) -->
   <p>Variable is set!</p>
 {{/if}}
 
+{{#each posts}}           <!-- Loop over CSV records -->
+  <li>{{id}}: {{title}}</li>
+{{/each}}
+
 {{> partials/header}}     <!-- Include partial from app/views/partials/header.sh.html -->
+```
+
+### Loops with {{#each}}
+
+The `{{#each}}` tag iterates over CSV model data, automatically parsing fields:
+
+```html
+<!-- In controller: posts=$(model_all "posts") -->
+
+{{#each posts}}
+    <article id="post-{{id}}">
+        <h2>{{title}}</h2>
+        <p>{{body}}</p>
+    </article>
+{{/each}}
+```
+
+Field variables (`{{id}}`, `{{title}}`, etc.) are set from the CSV header for each record.
+
+### XSS Protection
+
+All `{{variable}}` output is HTML-escaped by default to prevent XSS attacks:
+
+```html
+<!-- If title contains "<script>alert('xss')</script>" -->
+{{title}}
+<!-- Outputs: &lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt; -->
+```
+
+Use triple braces `{{{variable}}}` for raw HTML output (only for trusted content):
+
+```html
+<!-- For trusted HTML content only -->
+{{{trusted_html}}}
 ```
 
 ### Layouts
@@ -301,7 +340,9 @@ Layouts wrap views and use `{{yield}}` for content. Tailwind CSS and HTMX are in
 {{# text_area "body" "$body" }}
 {{# submit_button "Save" }}
 
-{{# h "$user_input" }}    <!-- HTML escape -->
+# Note: {{variable}} is auto-escaped. Use {{{variable}}} for raw HTML.
+# The h() function is available for manual escaping in shell blocks:
+{{# h "$user_input" }}
 ```
 
 ## HTMX Integration
