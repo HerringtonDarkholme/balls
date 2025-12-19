@@ -3,6 +3,11 @@
 # Posts Controller
 #
 
+# Check if this is an HTMX request
+is_htmx_request() {
+    [[ "$HX_REQUEST" == "true" ]]
+}
+
 index_action() {
     title="All Posts"
     # Get all posts
@@ -78,6 +83,15 @@ update_action() {
 
 destroy_action() {
     model_destroy "posts" "$id"
-    set_flash notice "Post deleted successfully!"
-    redirect_to "/posts"
+    
+    if is_htmx_request; then
+        # For HTMX requests, return empty content to remove the element
+        # Or redirect to refresh the page
+        set_flash notice "Post deleted successfully!"
+        header "HX-Redirect" "/posts"
+        render_html ""
+    else
+        set_flash notice "Post deleted successfully!"
+        redirect_to "/posts"
+    fi
 }

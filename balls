@@ -128,8 +128,9 @@ ROUTES
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{title}} - Balls App</title>
     <link rel="stylesheet" href="/style.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
-<body>
+<body hx-boost="true">
     <nav>
         <a href="/">Home</a>
     </nav>
@@ -636,7 +637,7 @@ balls_generate_scaffold() {
         echo "    </thead>"
         echo "    <tbody>"
         echo "        {{#each ${name}s}}"
-        echo "        <tr>"
+        echo "        <tr id=\"${name}-{{id}}\">"
         echo "            <td>{{id}}</td>"
         for field in "${fields[@]}"; do
             local field_name="${field%%:*}"
@@ -645,10 +646,7 @@ balls_generate_scaffold() {
         echo "            <td>"
         echo "                <a href=\"/${name}s/{{id}}\">Show</a>"
         echo "                <a href=\"/${name}s/{{id}}/edit\">Edit</a>"
-        echo "                <form method=\"post\" action=\"/${name}s/{{id}}\" style=\"display:inline\">"
-        echo "                    <input type=\"hidden\" name=\"_method\" value=\"DELETE\">"
-        echo "                    <button type=\"submit\" class=\"btn-danger\">Delete</button>"
-        echo "                </form>"
+        echo "                <button hx-delete=\"/${name}s/{{id}}\" hx-target=\"#${name}-{{id}}\" hx-swap=\"outerHTML\" hx-confirm=\"Are you sure?\" class=\"btn btn-danger btn-small\">Delete</button>"
         echo "            </td>"
         echo "        </tr>"
         echo "        {{/each}}"
@@ -670,6 +668,7 @@ balls_generate_scaffold() {
         echo "</dl>"
         echo "<p>"
         echo "    <a href=\"/${name}s/{{id}}/edit\" class=\"btn\">Edit</a>"
+        echo "    <button hx-delete=\"/${name}s/{{id}}\" hx-target=\"body\" hx-push-url=\"/${name}s\" hx-confirm=\"Are you sure?\" class=\"btn btn-danger\">Delete</button>"
         echo "    <a href=\"/${name}s\">Back to list</a>"
         echo "</p>"
     } > "$views_dir/show.sh.html"
@@ -677,7 +676,7 @@ balls_generate_scaffold() {
     # New view
     {
         echo "<h1>New ${name^}</h1>"
-        echo "<form method=\"post\" action=\"/${name}s\">"
+        echo "<form hx-post=\"/${name}s\" hx-target=\"body\" hx-push-url=\"true\">"
         for field in "${fields[@]}"; do
             local field_name="${field%%:*}"
             local field_type="${field#*:}"
@@ -696,8 +695,7 @@ balls_generate_scaffold() {
     # Edit view
     {
         echo "<h1>Edit ${name^}</h1>"
-        echo "<form method=\"post\" action=\"/${name}s/{{id}}\">"
-        echo "    <input type=\"hidden\" name=\"_method\" value=\"PUT\">"
+        echo "<form hx-put=\"/${name}s/{{id}}\" hx-target=\"body\" hx-push-url=\"true\">"
         for field in "${fields[@]}"; do
             local field_name="${field%%:*}"
             local field_type="${field#*:}"

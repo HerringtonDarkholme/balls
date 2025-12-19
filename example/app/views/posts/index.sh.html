@@ -2,7 +2,7 @@
 
 <p><a href="/posts/new" class="btn btn-primary">New Post</a></p>
 
-<div class="posts-list">
+<div class="posts-list" id="posts-list">
 {{# 
 # List all posts
 while IFS= read -r line; do
@@ -14,12 +14,17 @@ while IFS= read -r line; do
         post_body="${rest#*,}"
         
         cat << POSTHTML
-    <article class="post-card">
+    <article class="post-card" id="post-$post_id">
         <h2><a href="/posts/$post_id">$post_title</a></h2>
         <p>${post_body:0:100}...</p>
         <div class="post-actions">
             <a href="/posts/$post_id">Read more</a>
             <a href="/posts/$post_id/edit">Edit</a>
+            <button hx-delete="/posts/$post_id" 
+                    hx-target="#post-$post_id" 
+                    hx-swap="outerHTML"
+                    hx-confirm="Are you sure you want to delete this post?"
+                    class="btn btn-danger btn-small">Delete</button>
         </div>
     </article>
 POSTHTML
@@ -27,6 +32,3 @@ POSTHTML
 done <<< "$posts"
 }}
 </div>
-
-{{#if posts}}
-{{/if}}

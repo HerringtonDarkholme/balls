@@ -144,6 +144,11 @@ main {
     background: #c0392b;
 }
 
+.btn-small {
+    padding: 5px 10px;
+    font-size: 0.85em;
+}
+
 .cta {
     text-align: center;
     margin: 40px 0;

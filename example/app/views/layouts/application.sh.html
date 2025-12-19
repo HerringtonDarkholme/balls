@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{title}} - Balls App</title>
     <link rel="stylesheet" href="/style.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
-<body>
+<body hx-boost="true">
     <nav class="navbar">
         <div class="container">
             <a href="/" class="brand">Bash on Balls</a>
@@ -17,7 +18,7 @@
         </div>
     </nav>
     
-    <main class="container">
+    <main class="container" id="main-content">
         {{#if flash_notice}}
         <div class="alert alert-success">{{flash_notice}}</div>
         {{/if}}

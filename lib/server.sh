@@ -74,6 +74,10 @@ parse_headers() {
             Cookie) COOKIE="$value" ;;
             Authorization) AUTHORIZATION="$value" ;;
             Host) HOST_HEADER="$value" ;;
+            HX_Request) HX_REQUEST="$value" ;;
+            HX_Target) HX_TARGET="$value" ;;
+            HX_Trigger) HX_TRIGGER="$value" ;;
+            HX_Current_URL) HX_CURRENT_URL="$value" ;;
         esac
     done <<< "$headers"
 }

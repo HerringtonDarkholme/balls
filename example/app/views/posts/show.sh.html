@@ -1,4 +1,4 @@
-<article class="post">
+<article class="post" id="post-{{post_id}}">
     <h1>{{post_title}}</h1>
     
     <div class="post-body">
@@ -11,10 +11,11 @@
     
     <div class="post-actions">
         <a href="/posts/{{post_id}}/edit" class="btn">Edit</a>
-        <form method="post" action="/posts/{{post_id}}" style="display: inline;">
-            <input type="hidden" name="_method" value="DELETE">
-            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
-        </form>
+        <button hx-delete="/posts/{{post_id}}" 
+                hx-target="body"
+                hx-push-url="/posts"
+                hx-confirm="Are you sure you want to delete this post?"
+                class="btn btn-danger">Delete</button>
         <a href="/posts" class="btn btn-secondary">Back to Posts</a>
     </div>
 </article>
