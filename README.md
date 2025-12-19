@@ -11,6 +11,7 @@ A bash-native, netcat-served parody of Rails. Build web apps with shell scripts!
 - View templates with layouts, partials, and interpolation
 - Flat-file models (CSV) with validations and hooks
 - Generators for scaffolds, controllers, and models
+- [HTMX](https://htmx.org) for modern, JavaScript-light interactivity
 - Built-in test runner
 - Zero extra runtimes — pure bash + standard Unix tools
 
@@ -139,6 +140,11 @@ Controllers live in `app/controllers/` and define `*_action` functions:
 #!/usr/bin/env bash
 # app/controllers/posts_controller.sh
 
+# Check if request is from HTMX
+is_htmx_request() {
+    [[ "$HX_REQUEST" == "true" ]]
+}
+
 # Before actions (optional)
 before_action() {
     # Run before every action
@@ -169,6 +175,18 @@ create_action() {
         render "posts/new"
     fi
 }
+
+destroy_action() {
+    model_destroy "posts" "$id"
+
+    if is_htmx_request; then
+        # For HTMX: redirect via header
+        header "HX-Redirect" "/posts"
+        render_html ""
+    else
+        redirect_to "/posts"
+    fi
+}
 ```
 
 ### Controller Helpers
@@ -192,6 +210,12 @@ header "X-Custom" "value"    # Set response header
 render_text "plain text"     # Render plain text
 render_json '{"key":"val"}'  # Render JSON
 render_html "<h1>Hi</h1>"    # Render HTML directly
+
+# HTMX detection
+is_htmx_request              # Returns true if HX-Request header is present
+$HX_REQUEST                  # "true" if HTMX request
+$HX_TARGET                   # Target element ID
+$HX_TRIGGER                  # Triggering element ID
 ```
 
 ## Views
@@ -223,7 +247,7 @@ Views are `.sh.html` templates in `app/views/`:
 
 ### Layouts
 
-Layouts wrap views and use `{{yield}}` for content:
+Layouts wrap views and use `{{yield}}` for content. HTMX is included by default:
 
 ```html
 <!-- app/views/layouts/application.sh.html -->
@@ -232,15 +256,16 @@ Layouts wrap views and use `{{yield}}` for content:
 <head>
     <title>{{title}} - My App</title>
     <link rel="stylesheet" href="/style.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
-<body>
+<body hx-boost="true">
     {{#if flash_notice}}
     <div class="notice">{{flash_notice}}</div>
     {{/if}}
     {{#if flash_error}}
     <div class="error">{{flash_error}}</div>
     {{/if}}
-    
+
     {{yield}}
 </body>
 </html>
@@ -262,6 +287,65 @@ Layouts wrap views and use `{{yield}}` for content:
 
 {{# h "$user_input" }}    <!-- HTML escape -->
 ```
+
+## HTMX Integration
+
+Bash on Balls uses [HTMX](https://htmx.org) as its built-in JavaScript framework for modern, interactive UIs without writing JavaScript.
+
+### Automatic Features
+
+- **hx-boost**: Enabled on `<body>` by default — all links and forms use AJAX automatically
+- **HTMX headers**: The server parses `HX-Request`, `HX-Target`, `HX-Trigger` headers
+
+### Using HTMX in Views
+
+```html
+<!-- Delete button with confirmation -->
+<button hx-delete="/posts/{{id}}"
+        hx-target="#post-{{id}}"
+        hx-swap="outerHTML"
+        hx-confirm="Are you sure?">
+    Delete
+</button>
+
+<!-- Form with HTMX -->
+<form hx-post="/posts"
+      hx-target="body"
+      hx-push-url="true">
+    <input type="text" name="title">
+    <button type="submit">Create</button>
+</form>
+
+<!-- Inline editing -->
+<div hx-get="/posts/{{id}}/edit"
+     hx-trigger="click"
+     hx-swap="outerHTML">
+    Click to edit
+</div>
+```
+
+### HTMX Response Headers
+
+Controllers can set HTMX response headers:
+
+```bash
+destroy_action() {
+    model_destroy "posts" "$id"
+
+    if is_htmx_request; then
+        # Redirect after delete
+        header "HX-Redirect" "/posts"
+        render_html ""
+    else
+        redirect_to "/posts"
+    fi
+}
+```
+
+Available HTMX headers:
+- `HX-Redirect` — Client-side redirect
+- `HX-Refresh` — Full page refresh
+- `HX-Trigger` — Trigger client-side events
 
 ## Models
 
