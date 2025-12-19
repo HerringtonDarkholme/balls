@@ -1,0 +1,777 @@
+#!/usr/bin/env bash
+#
+# Bash on Balls - A bash-native web framework parody of Rails
+#
+# Usage: balls <command> [options]
+#
+
+set -e
+
+BALLS_VERSION="0.1.0"
+BALLS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Colors for output (if terminal supports it)
+if [[ -t 1 ]]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[0;33m'
+    BLUE='\033[0;34m'
+    BOLD='\033[1m'
+    NC='\033[0m' # No Color
+else
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    BOLD=''
+    NC=''
+fi
+
+# Print colored output
+balls_log() {
+    local level="$1"
+    shift
+    case "$level" in
+        info)    printf "${BLUE}[INFO]${NC} %s\n" "$*" ;;
+        success) printf "${GREEN}[OK]${NC} %s\n" "$*" ;;
+        warn)    printf "${YELLOW}[WARN]${NC} %s\n" "$*" ;;
+        error)   printf "${RED}[ERROR]${NC} %s\n" "$*" >&2 ;;
+        *)       printf "%s\n" "$*" ;;
+    esac
+}
+
+# Show help message
+balls_help() {
+    cat << EOF
+${BOLD}Bash on Balls${NC} v${BALLS_VERSION}
+A bash-native, netcat-served parody of Rails.
+
+${BOLD}Usage:${NC}
+    balls <command> [options]
+
+${BOLD}Commands:${NC}
+    new <name>              Create a new Balls application
+    server [path] [port]    Start the development server (default: port 3000)
+    routes [path]           Display the route table
+    generate <type> <name>  Generate controller, model, or scaffold
+        controller <name> [actions...]
+        model <name> [fields...]
+        scaffold <name> [fields...]
+    test [path]             Run the test suite
+    console [path]          Start an interactive console (coming soon)
+    help                    Show this help message
+    version                 Show version
+
+${BOLD}Examples:${NC}
+    balls new myapp
+    balls server
+    balls server ./myapp 8080
+    balls routes ./myapp
+    balls generate scaffold post title:string body:text
+    balls generate controller comments index show create
+    balls generate model comment body:string post_id:integer
+
+${BOLD}Environment:${NC}
+    BALLS_ENV       Set environment (development/production)
+    PORT            Server port (default: 3000)
+
+For more information, visit: https://github.com/example/balls
+EOF
+}
+
+# Show version
+balls_version() {
+    echo "Bash on Balls v${BALLS_VERSION}"
+}
+
+# Create new application
+balls_new() {
+    local app_name="$1"
+    
+    if [[ -z "$app_name" ]]; then
+        balls_log error "Application name required"
+        echo "Usage: balls new <name>"
+        exit 1
+    fi
+    
+    if [[ -d "$app_name" ]]; then
+        balls_log error "Directory '$app_name' already exists"
+        exit 1
+    fi
+    
+    balls_log info "Creating new Balls application: $app_name"
+    
+    # Create directory structure
+    mkdir -p "$app_name"/{app/{controllers,models,views/layouts},config,db,log,public,tmp/cache}
+    
+    # Create routes.sh
+    cat > "$app_name/config/routes.sh" << 'ROUTES'
+#!/usr/bin/env bash
+# Define your routes here
+# 
+# Examples:
+#   get "/" "home#index"
+#   get "/about" "pages#about"
+#   post "/contact" "pages#contact"
+#   resources "posts"
+
+# Root route
+get "/" "home#index"
+ROUTES
+    
+    # Create application layout
+    cat > "$app_name/app/views/layouts/application.sh.html" << 'LAYOUT'
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - Balls App</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+    </nav>
+    <main>
+        {{#if flash_notice}}
+        <div class="notice">{{flash_notice}}</div>
+        {{/if}}
+        {{#if flash_error}}
+        <div class="error">{{flash_error}}</div>
+        {{/if}}
+        {{yield}}
+    </main>
+    <footer>
+        <p>Powered by Bash on Balls</p>
+    </footer>
+</body>
+</html>
+LAYOUT
+
+    # Create home controller
+    cat > "$app_name/app/controllers/home_controller.sh" << 'CONTROLLER'
+#!/usr/bin/env bash
+# Home Controller
+
+index_action() {
+    title="Welcome"
+    message="Welcome to Bash on Balls!"
+    render "home/index"
+}
+CONTROLLER
+
+    # Create home view
+    mkdir -p "$app_name/app/views/home"
+    cat > "$app_name/app/views/home/index.sh.html" << 'VIEW'
+<h1>{{message}}</h1>
+<p>Your Balls app is running!</p>
+<p>Edit <code>app/views/home/index.sh.html</code> to change this page.</p>
+VIEW
+
+    # Create basic stylesheet
+    cat > "$app_name/public/style.css" << 'CSS'
+* {
+    box-sizing: border-box;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    color: #333;
+}
+nav {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+nav a {
+    margin-right: 15px;
+    color: #007bff;
+    text-decoration: none;
+}
+nav a:hover {
+    text-decoration: underline;
+}
+h1, h2, h3 {
+    color: #222;
+}
+.notice {
+    background: #d4edda;
+    color: #155724;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+.error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+form {
+    margin: 20px 0;
+}
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+input[type="text"],
+input[type="email"],
+textarea {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+textarea {
+    min-height: 150px;
+}
+button, .btn {
+    background: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+button:hover, .btn:hover {
+    background: #0056b3;
+}
+.btn-danger {
+    background: #dc3545;
+}
+.btn-danger:hover {
+    background: #c82333;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+th {
+    background: #f8f9fa;
+}
+footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    color: #666;
+    font-size: 0.9em;
+}
+code {
+    background: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+CSS
+
+    # Create .env file
+    cat > "$app_name/.env" << 'ENV'
+PORT=3000
+HOST=127.0.0.1
+BALLS_ENV=development
+DB_BACKEND=csv
+ENV
+
+    # Create .gitignore
+    cat > "$app_name/.gitignore" << 'GITIGNORE'
+.env
+log/*.log
+tmp/
+db/*.csv
+db/*.json
+!db/.gitkeep
+GITIGNORE
+
+    # Create placeholder files
+    touch "$app_name/db/.gitkeep"
+    touch "$app_name/log/.gitkeep"
+    touch "$app_name/tmp/cache/.gitkeep"
+    
+    balls_log success "Created application '$app_name'"
+    echo ""
+    echo "Next steps:"
+    echo "  cd $app_name"
+    echo "  ../balls server"
+    echo ""
+    echo "Then visit http://localhost:3000"
+}
+
+# Start server
+balls_server() {
+    local app_path="${1:-.}"
+    local port="${2:-3000}"
+    
+    # Resolve to absolute path
+    app_path="$(cd "$app_path" 2>/dev/null && pwd)" || {
+        balls_log error "Directory '$1' not found"
+        exit 1
+    }
+    
+    # Source server library
+    if [[ -f "$BALLS_ROOT/lib/server.sh" ]]; then
+        source "$BALLS_ROOT/lib/server.sh"
+    else
+        balls_log error "Server library not found. Is Balls installed correctly?"
+        exit 1
+    fi
+    
+    # Load app environment
+    if [[ -f "$app_path/.env" ]]; then
+        source "$app_path/.env"
+    fi
+    
+    # Command-line port takes precedence over .env
+    if [[ -n "$2" ]]; then
+        port="$2"
+    else
+        port="${PORT:-$port}"
+    fi
+    
+    balls_log info "Starting Balls server..."
+    balls_log info "App path: $app_path"
+    balls_log info "Listening on http://${HOST:-127.0.0.1}:$port"
+    echo "Press Ctrl+C to stop"
+    echo ""
+    
+    APP_PATH="$app_path" start_server "$port"
+}
+
+# Display routes
+balls_routes() {
+    local app_path="${1:-.}"
+    
+    app_path="$(cd "$app_path" 2>/dev/null && pwd)" || {
+        balls_log error "Directory '$1' not found"
+        exit 1
+    }
+    
+    # Source routing library
+    if [[ -f "$BALLS_ROOT/lib/routing.sh" ]]; then
+        source "$BALLS_ROOT/lib/routing.sh"
+    else
+        balls_log error "Routing library not found"
+        exit 1
+    fi
+    
+    # Load routes
+    if [[ -f "$app_path/config/routes.sh" ]]; then
+        source "$app_path/config/routes.sh"
+    else
+        balls_log error "No routes.sh found in $app_path/config/"
+        exit 1
+    fi
+    
+    print_routes
+}
+
+# Generate scaffolds, controllers, models
+balls_generate() {
+    local type="$1"
+    shift
+    
+    case "$type" in
+        controller|c)
+            balls_generate_controller "$@"
+            ;;
+        model|m)
+            balls_generate_model "$@"
+            ;;
+        scaffold|s)
+            balls_generate_scaffold "$@"
+            ;;
+        *)
+            balls_log error "Unknown generator type: $type"
+            echo "Available types: controller, model, scaffold"
+            exit 1
+            ;;
+    esac
+}
+
+# Generate controller
+balls_generate_controller() {
+    local name="$1"
+    shift
+    local actions=("$@")
+    
+    if [[ -z "$name" ]]; then
+        balls_log error "Controller name required"
+        echo "Usage: balls generate controller <name> [actions...]"
+        exit 1
+    fi
+    
+    local controller_file="app/controllers/${name}_controller.sh"
+    local views_dir="app/views/$name"
+    
+    if [[ -f "$controller_file" ]]; then
+        balls_log warn "Controller already exists: $controller_file"
+        return 1
+    fi
+    
+    balls_log info "Generating controller: $name"
+    
+    mkdir -p "app/controllers" "$views_dir"
+    
+    # Generate controller file
+    {
+        echo "#!/usr/bin/env bash"
+        echo "# ${name^} Controller"
+        echo ""
+        
+        if [[ ${#actions[@]} -eq 0 ]]; then
+            actions=("index")
+        fi
+        
+        for action in "${actions[@]}"; do
+            echo "${action}_action() {"
+            echo "    render \"$name/$action\""
+            echo "}"
+            echo ""
+        done
+    } > "$controller_file"
+    
+    # Generate view files
+    for action in "${actions[@]}"; do
+        local view_file="$views_dir/${action}.sh.html"
+        if [[ ! -f "$view_file" ]]; then
+            echo "<h1>${name^} - ${action^}</h1>" > "$view_file"
+            balls_log success "Created view: $view_file"
+        fi
+    done
+    
+    balls_log success "Created controller: $controller_file"
+}
+
+# Generate model
+balls_generate_model() {
+    local name="$1"
+    shift
+    local fields=("$@")
+    
+    if [[ -z "$name" ]]; then
+        balls_log error "Model name required"
+        echo "Usage: balls generate model <name> [field:type...]"
+        exit 1
+    fi
+    
+    local model_file="app/models/${name}.sh"
+    
+    if [[ -f "$model_file" ]]; then
+        balls_log warn "Model already exists: $model_file"
+        return 1
+    fi
+    
+    balls_log info "Generating model: $name"
+    
+    mkdir -p "app/models" "db"
+    
+    # Generate model file
+    {
+        echo "#!/usr/bin/env bash"
+        echo "# ${name^} Model"
+        echo ""
+        echo "MODEL_NAME=\"$name\""
+        echo "MODEL_FIELDS=(\"id\""
+        for field in "${fields[@]}"; do
+            local field_name="${field%%:*}"
+            echo "    \"$field_name\""
+        done
+        echo ")"
+        echo ""
+        echo "# Validations"
+        echo "validate_${name}() {"
+        echo "    local errors=()"
+        echo "    # Add validations here"
+        echo "    # Example: [[ -z \"\$title\" ]] && errors+=(\"Title can't be blank\")"
+        if [[ ${#fields[@]} -gt 0 ]]; then
+            local first_field="${fields[0]%%:*}"
+            echo "    [[ -z \"\$$first_field\" ]] && errors+=(\"${first_field^} can't be blank\")"
+        fi
+        echo "    printf '%s\n' \"\${errors[@]}\""
+        echo "}"
+        echo ""
+        echo "# Callbacks"
+        echo "before_save_${name}() {"
+        echo "    : # Add before_save logic here"
+        echo "}"
+        echo ""
+        echo "after_save_${name}() {"
+        echo "    : # Add after_save logic here"
+        echo "}"
+    } > "$model_file"
+    
+    # Create CSV header
+    local csv_file="db/${name}s.csv"
+    if [[ ! -f "$csv_file" ]]; then
+        {
+            echo -n "id"
+            for field in "${fields[@]}"; do
+                local field_name="${field%%:*}"
+                echo -n ",$field_name"
+            done
+            echo ""
+        } > "$csv_file"
+    fi
+    
+    balls_log success "Created model: $model_file"
+    balls_log success "Created database: $csv_file"
+}
+
+# Generate scaffold
+balls_generate_scaffold() {
+    local name="$1"
+    shift
+    local fields=("$@")
+    
+    if [[ -z "$name" ]]; then
+        balls_log error "Scaffold name required"
+        echo "Usage: balls generate scaffold <name> [field:type...]"
+        exit 1
+    fi
+    
+    balls_log info "Generating scaffold for: $name"
+    
+    # Generate model
+    balls_generate_model "$name" "${fields[@]}"
+    
+    # Generate controller with CRUD actions
+    local controller_file="app/controllers/${name}s_controller.sh"
+    local views_dir="app/views/${name}s"
+    
+    mkdir -p "app/controllers" "$views_dir"
+    
+    # Generate controller with CRUD
+    {
+        echo "#!/usr/bin/env bash"
+        echo "# ${name^}s Controller"
+        echo ""
+        echo "index_action() {"
+        echo "    ${name}s=\$(model_all \"${name}s\")"
+        echo "    render \"${name}s/index\""
+        echo "}"
+        echo ""
+        echo "show_action() {"
+        echo "    ${name}=\$(model_find \"${name}s\" \"\$id\")"
+        echo "    if [[ -z \"\$${name}\" ]]; then"
+        echo "        set_flash error \"${name^} not found\""
+        echo "        redirect_to \"/${name}s\""
+        echo "        return"
+        echo "    fi"
+        echo "    render \"${name}s/show\""
+        echo "}"
+        echo ""
+        echo "new_action() {"
+        echo "    render \"${name}s/new\""
+        echo "}"
+        echo ""
+        echo "create_action() {"
+        echo "    if model_create \"${name}s\"; then"
+        echo "        set_flash notice \"${name^} created successfully\""
+        echo "        redirect_to \"/${name}s\""
+        echo "    else"
+        echo "        set_flash error \"Failed to create ${name}\""
+        echo "        render \"${name}s/new\""
+        echo "    fi"
+        echo "}"
+        echo ""
+        echo "edit_action() {"
+        echo "    ${name}=\$(model_find \"${name}s\" \"\$id\")"
+        echo "    if [[ -z \"\$${name}\" ]]; then"
+        echo "        set_flash error \"${name^} not found\""
+        echo "        redirect_to \"/${name}s\""
+        echo "        return"
+        echo "    fi"
+        echo "    render \"${name}s/edit\""
+        echo "}"
+        echo ""
+        echo "update_action() {"
+        echo "    if model_update \"${name}s\" \"\$id\"; then"
+        echo "        set_flash notice \"${name^} updated successfully\""
+        echo "        redirect_to \"/${name}s/\$id\""
+        echo "    else"
+        echo "        set_flash error \"Failed to update ${name}\""
+        echo "        render \"${name}s/edit\""
+        echo "    fi"
+        echo "}"
+        echo ""
+        echo "destroy_action() {"
+        echo "    if model_destroy \"${name}s\" \"\$id\"; then"
+        echo "        set_flash notice \"${name^} deleted successfully\""
+        echo "    else"
+        echo "        set_flash error \"Failed to delete ${name}\""
+        echo "    fi"
+        echo "    redirect_to \"/${name}s\""
+        echo "}"
+    } > "$controller_file"
+    
+    # Generate views
+    # Index view
+    {
+        echo "<h1>${name^}s</h1>"
+        echo "<p><a href=\"/${name}s/new\" class=\"btn\">New ${name^}</a></p>"
+        echo "<table>"
+        echo "    <thead>"
+        echo "        <tr>"
+        echo "            <th>ID</th>"
+        for field in "${fields[@]}"; do
+            local field_name="${field%%:*}"
+            echo "            <th>${field_name^}</th>"
+        done
+        echo "            <th>Actions</th>"
+        echo "        </tr>"
+        echo "    </thead>"
+        echo "    <tbody>"
+        echo "        {{#each ${name}s}}"
+        echo "        <tr>"
+        echo "            <td>{{id}}</td>"
+        for field in "${fields[@]}"; do
+            local field_name="${field%%:*}"
+            echo "            <td>{{$field_name}}</td>"
+        done
+        echo "            <td>"
+        echo "                <a href=\"/${name}s/{{id}}\">Show</a>"
+        echo "                <a href=\"/${name}s/{{id}}/edit\">Edit</a>"
+        echo "                <form method=\"post\" action=\"/${name}s/{{id}}\" style=\"display:inline\">"
+        echo "                    <input type=\"hidden\" name=\"_method\" value=\"DELETE\">"
+        echo "                    <button type=\"submit\" class=\"btn-danger\">Delete</button>"
+        echo "                </form>"
+        echo "            </td>"
+        echo "        </tr>"
+        echo "        {{/each}}"
+        echo "    </tbody>"
+        echo "</table>"
+    } > "$views_dir/index.sh.html"
+    
+    # Show view
+    {
+        echo "<h1>${name^} Details</h1>"
+        echo "<dl>"
+        echo "    <dt>ID</dt>"
+        echo "    <dd>{{id}}</dd>"
+        for field in "${fields[@]}"; do
+            local field_name="${field%%:*}"
+            echo "    <dt>${field_name^}</dt>"
+            echo "    <dd>{{$field_name}}</dd>"
+        done
+        echo "</dl>"
+        echo "<p>"
+        echo "    <a href=\"/${name}s/{{id}}/edit\" class=\"btn\">Edit</a>"
+        echo "    <a href=\"/${name}s\">Back to list</a>"
+        echo "</p>"
+    } > "$views_dir/show.sh.html"
+    
+    # New view
+    {
+        echo "<h1>New ${name^}</h1>"
+        echo "<form method=\"post\" action=\"/${name}s\">"
+        for field in "${fields[@]}"; do
+            local field_name="${field%%:*}"
+            local field_type="${field#*:}"
+            echo "    <label for=\"$field_name\">${field_name^}</label>"
+            if [[ "$field_type" == "text" ]]; then
+                echo "    <textarea name=\"$field_name\" id=\"$field_name\"></textarea>"
+            else
+                echo "    <input type=\"text\" name=\"$field_name\" id=\"$field_name\">"
+            fi
+        done
+        echo "    <button type=\"submit\">Create ${name^}</button>"
+        echo "</form>"
+        echo "<p><a href=\"/${name}s\">Back to list</a></p>"
+    } > "$views_dir/new.sh.html"
+    
+    # Edit view
+    {
+        echo "<h1>Edit ${name^}</h1>"
+        echo "<form method=\"post\" action=\"/${name}s/{{id}}\">"
+        echo "    <input type=\"hidden\" name=\"_method\" value=\"PUT\">"
+        for field in "${fields[@]}"; do
+            local field_name="${field%%:*}"
+            local field_type="${field#*:}"
+            echo "    <label for=\"$field_name\">${field_name^}</label>"
+            if [[ "$field_type" == "text" ]]; then
+                echo "    <textarea name=\"$field_name\" id=\"$field_name\">{{$field_name}}</textarea>"
+            else
+                echo "    <input type=\"text\" name=\"$field_name\" id=\"$field_name\" value=\"{{$field_name}}\">"
+            fi
+        done
+        echo "    <button type=\"submit\">Update ${name^}</button>"
+        echo "</form>"
+        echo "<p><a href=\"/${name}s\">Back to list</a></p>"
+    } > "$views_dir/edit.sh.html"
+    
+    balls_log success "Created controller: $controller_file"
+    balls_log success "Created views in: $views_dir/"
+    
+    # Add routes suggestion
+    echo ""
+    echo "Add to config/routes.sh:"
+    echo "  resources \"${name}s\""
+}
+
+# Run tests
+balls_test() {
+    local test_path="${1:-test}"
+    
+    if [[ -f "$BALLS_ROOT/lib/test.sh" ]]; then
+        source "$BALLS_ROOT/lib/test.sh"
+        run_tests "$test_path"
+    else
+        balls_log error "Test library not found"
+        exit 1
+    fi
+}
+
+# Main command dispatcher
+main() {
+    local command="${1:-help}"
+    shift 2>/dev/null || true
+    
+    case "$command" in
+        new|n)
+            balls_new "$@"
+            ;;
+        server|s)
+            balls_server "$@"
+            ;;
+        routes|r)
+            balls_routes "$@"
+            ;;
+        generate|g)
+            balls_generate "$@"
+            ;;
+        test|t)
+            balls_test "$@"
+            ;;
+        console|c)
+            balls_log warn "Console not yet implemented"
+            ;;
+        help|--help|-h)
+            balls_help
+            ;;
+        version|--version|-v)
+            balls_version
+            ;;
+        *)
+            balls_log error "Unknown command: $command"
+            echo "Run 'balls help' for usage"
+            exit 1
+            ;;
+    esac
+}
+
+# Run main
+main "$@"

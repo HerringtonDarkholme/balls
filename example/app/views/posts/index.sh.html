@@ -1,0 +1,32 @@
+<h1>{{title}}</h1>
+
+<p><a href="/posts/new" class="btn btn-primary">New Post</a></p>
+
+<div class="posts-list">
+{{# 
+# List all posts
+while IFS= read -r line; do
+    if [[ -n "$line" ]]; then
+        # Parse each post
+        post_id="${line%%,*}"
+        rest="${line#*,}"
+        post_title="${rest%%,*}"
+        post_body="${rest#*,}"
+        
+        cat << POSTHTML
+    <article class="post-card">
+        <h2><a href="/posts/$post_id">$post_title</a></h2>
+        <p>${post_body:0:100}...</p>
+        <div class="post-actions">
+            <a href="/posts/$post_id">Read more</a>
+            <a href="/posts/$post_id/edit">Edit</a>
+        </div>
+    </article>
+POSTHTML
+    fi
+done <<< "$posts"
+}}
+</div>
+
+{{#if posts}}
+{{/if}}
