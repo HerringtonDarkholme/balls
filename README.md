@@ -30,7 +30,7 @@ A bash-native, netcat-served parody of Rails. Build web apps with shell scripts!
 
 ```bash
 # Clone the repo
-git clone https://github.com/example/balls.git
+git clone https://github.com/HerringtonDarkholme/balls.git
 cd balls
 
 # Create a new app
@@ -320,7 +320,7 @@ Layouts wrap views and use `{{yield}}` for content. Tailwind CSS and HTMX are in
         {{flash_error}}
     </div>
     {{/if}}
-    
+
     {{yield}}
 </body>
 </html>
@@ -445,9 +445,9 @@ Then use them in your views:
 </div>
 
 <!-- Form input -->
-<input type="text" 
-       class="w-full px-4 py-2 border border-gray-300 rounded-lg 
-              focus:ring-2 focus:ring-primary focus:border-transparent 
+<input type="text"
+       class="w-full px-4 py-2 border border-gray-300 rounded-lg
+              focus:ring-2 focus:ring-primary focus:border-transparent
               outline-none transition">
 
 <!-- Alert -->
