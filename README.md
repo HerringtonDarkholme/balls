@@ -4,6 +4,9 @@ A bash-native, netcat-served parody of Rails. Build web apps with shell scripts!
 
 > "Rails-like DX, bash-scale features."
 
+<img width="926" height="513" alt="image" src="https://github.com/user-attachments/assets/2dd197c9-6da5-45a3-9bbf-0d966f2a44d9" />
+
+
 ## Features
 
 - Rails-like routing DSL (`get`, `post`, `resources`)
