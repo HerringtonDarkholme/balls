@@ -1,8 +1,11 @@
-<h1>{{title}}</h1>
+<div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-gray-800">{{title}}</h1>
+    <a href="/posts/new" class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg transition">
+        New Post
+    </a>
+</div>
 
-<p><a href="/posts/new" class="btn btn-primary">New Post</a></p>
-
-<div class="posts-list" id="posts-list">
+<div class="grid gap-6" id="posts-list">
 {{# 
 # List all posts
 while IFS= read -r line; do
@@ -14,17 +17,19 @@ while IFS= read -r line; do
         post_body="${rest#*,}"
         
         cat << POSTHTML
-    <article class="post-card" id="post-$post_id">
-        <h2><a href="/posts/$post_id">$post_title</a></h2>
-        <p>${post_body:0:100}...</p>
-        <div class="post-actions">
-            <a href="/posts/$post_id">Read more</a>
-            <a href="/posts/$post_id/edit">Edit</a>
+    <article class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition" id="post-$post_id">
+        <h2 class="text-xl font-semibold mb-2">
+            <a href="/posts/$post_id" class="text-gray-800 hover:text-primary">$post_title</a>
+        </h2>
+        <p class="text-gray-600 mb-4">${post_body:0:100}...</p>
+        <div class="flex gap-3 text-sm">
+            <a href="/posts/$post_id" class="text-primary hover:underline">Read more</a>
+            <a href="/posts/$post_id/edit" class="text-gray-500 hover:underline">Edit</a>
             <button hx-delete="/posts/$post_id" 
                     hx-target="#post-$post_id" 
                     hx-swap="outerHTML"
                     hx-confirm="Are you sure you want to delete this post?"
-                    class="btn btn-danger btn-small">Delete</button>
+                    class="text-danger hover:underline">Delete</button>
         </div>
     </article>
 POSTHTML

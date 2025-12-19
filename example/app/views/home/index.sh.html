@@ -1,24 +1,31 @@
-<div class="hero">
-    <h1>{{title}}</h1>
-    <p class="tagline">{{tagline}}</p>
+<div class="text-center py-12">
+    <h1 class="text-5xl font-bold text-gray-800 mb-4">{{title}}</h1>
+    <p class="text-xl text-gray-600">{{tagline}}</p>
 </div>
 
-<section class="features">
-    <div class="feature">
-        <h3>Rails-like DSL</h3>
-        <p>Familiar routing, controllers, views, and models - all in Bash!</p>
+<div class="grid md:grid-cols-3 gap-6 mb-12">
+    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+        <div class="text-4xl mb-4">🚂</div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Rails-like DSL</h3>
+        <p class="text-gray-600">Familiar routing, controllers, views, and models - all in Bash!</p>
     </div>
-    <div class="feature">
-        <h3>Zero Dependencies</h3>
-        <p>Uses only macOS built-in tools: bash, nc, sed, awk</p>
+    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+        <div class="text-4xl mb-4">📦</div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Zero Dependencies</h3>
+        <p class="text-gray-600">Uses only macOS built-in tools: bash, nc, sed, awk</p>
     </div>
-    <div class="feature">
-        <h3>Full CRUD</h3>
-        <p>Create, read, update, delete with flat-file storage</p>
+    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+        <div class="text-4xl mb-4">💾</div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">Full CRUD</h3>
+        <p class="text-gray-600">Create, read, update, delete with flat-file storage</p>
     </div>
-</section>
+</div>
 
-<div class="cta">
-    <a href="/posts" class="btn btn-primary">View Posts</a>
-    <a href="/posts/new" class="btn btn-secondary">Create a Post</a>
+<div class="text-center space-x-4">
+    <a href="/posts" class="inline-block bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-lg transition font-medium">
+        View Posts
+    </a>
+    <a href="/posts/new" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg transition font-medium">
+        Create a Post
+    </a>
 </div>

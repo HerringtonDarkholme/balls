@@ -1,21 +1,29 @@
-<article class="post" id="post-{{post_id}}">
-    <h1>{{post_title}}</h1>
+<article class="bg-white rounded-lg shadow-md p-8" id="post-{{post_id}}">
+    <h1 class="text-3xl font-bold text-gray-800 mb-4">{{post_title}}</h1>
     
-    <div class="post-body">
+    <div class="prose text-gray-600 mb-6">
         <p>{{post_body}}</p>
     </div>
     
-    <div class="post-meta">
-        <span>Post ID: {{post_id}}</span>
+    <div class="text-sm text-gray-400 mb-6">
+        Post ID: {{post_id}}
     </div>
     
-    <div class="post-actions">
-        <a href="/posts/{{post_id}}/edit" class="btn">Edit</a>
+    <div class="flex gap-3">
+        <a href="/posts/{{post_id}}/edit" 
+           class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg transition">
+            Edit
+        </a>
         <button hx-delete="/posts/{{post_id}}" 
                 hx-target="body"
                 hx-push-url="/posts"
                 hx-confirm="Are you sure you want to delete this post?"
-                class="btn btn-danger">Delete</button>
-        <a href="/posts" class="btn btn-secondary">Back to Posts</a>
+                class="bg-danger hover:bg-danger-hover text-white px-4 py-2 rounded-lg transition">
+            Delete
+        </button>
+        <a href="/posts" 
+           class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition">
+            Back to Posts
+        </a>
     </div>
 </article>

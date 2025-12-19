@@ -11,6 +11,7 @@ A bash-native, netcat-served parody of Rails. Build web apps with shell scripts!
 - View templates with layouts, partials, and interpolation
 - Flat-file models (CSV) with validations and hooks
 - Generators for scaffolds, controllers, and models
+- [Tailwind CSS](https://tailwindcss.com) via CDN for styling
 - [HTMX](https://htmx.org) for modern, JavaScript-light interactivity
 - Built-in test runner
 - Zero extra runtimes — pure bash + standard Unix tools
@@ -247,7 +248,7 @@ Views are `.sh.html` templates in `app/views/`:
 
 ### Layouts
 
-Layouts wrap views and use `{{yield}}` for content. HTMX is included by default:
+Layouts wrap views and use `{{yield}}` for content. Tailwind CSS and HTMX are included by default:
 
 ```html
 <!-- app/views/layouts/application.sh.html -->
@@ -255,17 +256,29 @@ Layouts wrap views and use `{{yield}}` for content. HTMX is included by default:
 <html>
 <head>
     <title>{{title}} - My App</title>
-    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-primary: #667eea;
+            --color-primary-hover: #5a6fd6;
+            --color-danger: #e74c3c;
+            --color-danger-hover: #c0392b;
+        }
+    </style>
 </head>
-<body hx-boost="true">
+<body hx-boost="true" class="min-h-screen bg-gray-100">
     {{#if flash_notice}}
-    <div class="notice">{{flash_notice}}</div>
+    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        {{flash_notice}}
+    </div>
     {{/if}}
     {{#if flash_error}}
-    <div class="error">{{flash_error}}</div>
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {{flash_error}}
+    </div>
     {{/if}}
-
+    
     {{yield}}
 </body>
 </html>
@@ -346,6 +359,58 @@ Available HTMX headers:
 - `HX-Redirect` — Client-side redirect
 - `HX-Refresh` — Full page refresh
 - `HX-Trigger` — Trigger client-side events
+
+## Tailwind CSS
+
+Bash on Balls uses [Tailwind CSS](https://tailwindcss.com) via CDN for styling. No build step required!
+
+### Custom Theme Colors
+
+Define custom colors in your layout using `@theme`:
+
+```html
+<style type="text/tailwindcss">
+    @theme {
+        --color-primary: #667eea;
+        --color-primary-hover: #5a6fd6;
+        --color-danger: #e74c3c;
+        --color-danger-hover: #c0392b;
+    }
+</style>
+```
+
+Then use them in your views:
+
+```html
+<button class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg">
+    Submit
+</button>
+
+<button class="bg-danger hover:bg-danger-hover text-white px-4 py-2 rounded-lg">
+    Delete
+</button>
+```
+
+### Example Components
+
+```html
+<!-- Card -->
+<div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-semibold mb-2">Title</h2>
+    <p class="text-gray-600">Content goes here</p>
+</div>
+
+<!-- Form input -->
+<input type="text" 
+       class="w-full px-4 py-2 border border-gray-300 rounded-lg 
+              focus:ring-2 focus:ring-primary focus:border-transparent 
+              outline-none transition">
+
+<!-- Alert -->
+<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+    Success message
+</div>
+```
 
 ## Models
 
